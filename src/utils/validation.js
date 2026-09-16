@@ -21,7 +21,15 @@ const validateLoginData = (req) => {
   }
 };
 
+const validatePassword = (req) => {
+  const { newPassword } = req.body;
+  if (!validator.isStrongPassword(newPassword)) {
+    throw new Error('Please enter strong password.');
+  }
+};
+
 module.exports = {
   validateSignUpData,
   validateLoginData,
+  validatePassword,
 };

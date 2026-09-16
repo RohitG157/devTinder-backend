@@ -44,11 +44,19 @@ authRouter.post('/login', async (req, res) => {
       res.cookie('token', token, {
         expires: new Date(Date.now() + 1 * 3600000), // Expires in 1 hour
       });
-      res.send('Login Successfull!!!');
+      res.json({ message: 'Login Successfull!!!', data: user });
     }
   } catch (err) {
     res.status(400).send('Error Occurred: ' + err.message);
   }
+});
+
+authRouter.post('/logout', (req, res) => {
+  res.cookie('token', null, {
+    expires: new Date(Date.now()),
+  });
+  res.setHeader('Clear-Site-Data', '"cookies", "storage", "cache"'); // works only on https
+  res.json({ message: 'Logout Successfully.' });
 });
 
 module.exports = authRouter;

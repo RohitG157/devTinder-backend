@@ -8,17 +8,21 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const fieldAllowedToUpdate = (req, res, next) => {
-  const ALLOWED_UPDATES = ['password', 'photoUrl', 'skills', 'about'];
+const fieldAllowedToUpdate = (req) => {
+  const ALLOWED_UPDATES = ['photoUrl', 'skills', 'about', 'gender'];
   const data = req.body;
   const isUpdateAllowed = Object.keys(data).every((k) =>
     ALLOWED_UPDATES.includes(k),
   );
-  const isSkillsAreInLimit = data.skills.length < 10;
-  if (isUpdateAllowed && isSkillsAreInLimit) {
-    next();
+  let isSkillsAreInLimit = false;
+  if (data.skills) {
+    isSkillsAreInLimit = data?.skills.length < 10;
   } else {
-    res.status(400).send('Invalid Request!!!');
+    isSkillsAreInLimit = true;
+  }
+
+  if (!isUpdateAllowed || !isSkillsAreInLimit) {
+    throw new Error('Invalid Edit Request.');
   }
 };
 
@@ -31,7 +35,6 @@ const verifyToken = async (req, res, next) => {
       throw new Error('Invalid Token...');
     }
     const decodedMsg = await jwt.verify(token, 'DevTinder@5107$');
-    console.log(decodedMsg);
     const { _id } = decodedMsg;
     req._id = _id;
     next();
