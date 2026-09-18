@@ -1,14 +1,59 @@
 const express = require('express');
 const { verifyToken } = require('../middlewares/auth/auth');
+const User = require('../models/user');
+const ConnectionRequestModel = require('../models/connectionRequest');
 
 const requestRouter = express.Router();
 
-requestRouter.post('/sendConnectionRequest', verifyToken, (req, res) => {
-  try {
-    res.send('Connection Request Sent Successfully.');
-  } catch (error) {
-    res.status(400).send('Error Occured: ' + error.message);
-  }
-});
+requestRouter.post(
+  '/request/send/:status/:userId',
+  verifyToken,
+  async (req, res) => {
+    try {
+      const status = req.params?.status;
+      const allowedStatus = ['ignored', 'interested'];
+      if (!allowedStatus.includes(status)) {
+        return res
+          .status(400)
+          .json({ message: 'Bad Request: Invalid status.' });
+      }
+      const toUserId = req.params?.userId;
+      const fromUserId = req._id;
+      const toUser = await User.findById(toUserId);
+      if (!toUser) {
+        return res
+          .status(400)
+          .json({ message: 'Bad Request: User not found.' });
+      }
+
+      const existingConnectionRequest = await ConnectionRequestModel.findOne({
+        $or: [
+          { fromUserId, toUserId },
+          { fromUserId: toUserId, toUserId: fromUserId },
+        ],
+      });
+
+      if (existingConnectionRequest) {
+        return res
+          .status(400)
+          .json({ message: 'Bad Request: Check the already sent requests.' });
+      }
+
+      const newConnectionRequest = new ConnectionRequestModel({
+        fromUserId,
+        toUserId,
+        status,
+      });
+
+      await newConnectionRequest.save();
+      res.json({
+        message: 'Connection request sent successfully.',
+        data: newConnectionRequest,
+      });
+    } catch (error) {
+      res.status(400).json({ message: 'Error Occured: ' + error.message });
+    }
+  },
+);
 
 module.exports = requestRouter;
